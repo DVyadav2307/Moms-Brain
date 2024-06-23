@@ -6,6 +6,7 @@
  * User Manual available at https://docs.gradle.org/8.0.2/userguide/building_java_projects.html
  */
 
+
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'application'
@@ -27,6 +28,10 @@ dependencies {
     implementation 'net.dv8tion:JDA:5.0.0-beta.24'
 
     implementation("ch.qos.logback:logback-classic:1.5.6")
+
+    // https://mvnrepository.com/artifact/org.apache.httpcomponents.client5/httpclient5
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3'
+    
 
 
 }
@@ -50,3 +55,15 @@ task  createJar(type: Jar) {
 //     // Use JUnit Platform for unit tests.
 //     useJUnitPlatform()
 // }
+
+task runPythonServer(type: Exec) {
+    workingDir 'src/main/resources/io/github/dvyadav/momsbrain'
+    
+    // Conditional command based on OS
+    def command = System.getProperty('os.name').toLowerCase().contains('win') ? 'python' : 'python3'
+    
+    commandLine command, 'python.py'
+}
+
+// Make sure 'run' task depends on 'runPythonServer' task
+run.dependsOn runPythonServer
