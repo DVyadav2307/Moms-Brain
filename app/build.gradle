@@ -66,4 +66,4 @@ task runPythonServer(type: Exec) {
 }
 
 // Make sure 'run' task depends on 'runPythonServer' task
-run.dependsOn runPythonServer
+// run.dependsOn runPythonServer
