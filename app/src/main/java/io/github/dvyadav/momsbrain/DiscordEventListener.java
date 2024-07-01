@@ -1,8 +1,12 @@
 package io.github.dvyadav.momsbrain;
 
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
+
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
@@ -10,48 +14,65 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 @SuppressWarnings("null")
 public class DiscordEventListener extends ListenerAdapter {
+
+    /* fetching path of file containing profane words */
+    private final URL CUSSWORDSFILE =getClass().getResource("profaneList.txt");
+
+    /* object to read from the profane-word file */
+    private BufferedReader reader ;
+
+    /* object to load the profane words from file to the Set */
+    private Set<String> cusswords = new HashSet<>();
     
     @Override
     public void onReady(ReadyEvent event){
         System.out.println("___THE BOT IS READY___");
+
+        /* cuss-words file read operation on saperate virtual thread */
+        @SuppressWarnings("unused")
+        Thread thread = Thread.ofVirtual().start(() -> {
+
+            try {
+
+                /* read and save to the Set */
+                reader = new BufferedReader(new FileReader(new File(CUSSWORDSFILE.toURI())));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    cusswords.add(line.trim());
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        });
+
+
+        // other normal processes
+        
+
     }
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event){
-        if(event.getAuthor().isBot()) return;
 
-        Message msg = event.getMessage();
+        if(event.getMessage().getContentRaw().equals("!printCuss")){
 
-        if(msg.getContentRaw().equals("!printName")){
-            event.getChannel().sendMessage("Namee of Channel is :"+event.getGuild().getTextChannelById(1252188418817921077L).getName()).queue();
+            event.getChannel().sendMessage("logging .... Check Logs!!").queue();
+
+            for (String string : cusswords) {
+                System.out.println(">>> "+ string);
+            }
+            event.getChannel().sendMessage("Logging done.").queue();
         }
-
-        if(msg.getContentRaw().equals("!printID")){
-            event.getChannel().sendMessage("Channel "+event.getChannel().getName()+" ID is:"+event.getChannel().getId()).queue();
-        }
-
-        if(msg.getContentRaw().toLowerCase().contains("shit")){
-            System.out.println("___ "+event.getAuthor()+"SAID THIS"+msg.getContentRaw()+"___");
-            msg.delete().queue((v) ->{
-                MessageChannel chnl = event.getChannel();
-                chnl.sendMessage(" Mind Your Language "+event.getAuthor().getEffectiveName()).queue(/* (w) ->
-                {
-                    event.getAuthor().
-                } */);
-            });
-        }
+        
     }
 
     @Override
     public void onGuildMemberJoin(GuildMemberJoinEvent event){
 
-        String newMembeeName = event.getUser().getAsMention();
-
-        System.out.println("___"+newMembeeName+" JOINED THE "+event.getGuild().getName()+"___");
-
-        TextChannel channel = event.getGuild().getTextChannelById(1252188418817921077L);
-        channel.sendMessage("Welcome to Mom's Basement "+newMembeeName+",\nPlz Check Pinned Messege for the Notes!!").queue();
         
     }
+
 
 }

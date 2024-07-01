@@ -9,8 +9,9 @@ public class Main {
 
         // New JDA api from JDA builder
         JDA api = JDABuilder.createDefault(System.getenv("MOM_BOT_TOKEN"))
-                .enableIntents(GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MEMBERS)
-                .build();
+        .enableIntents(GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MEMBERS)
+        .build();
+        
         api.addEventListener(new DiscordEventListener());
 
         
