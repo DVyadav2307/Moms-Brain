@@ -48,7 +48,7 @@ task  createJar(type: Jar) {
     manifest {
         attributes 'Main-Class': 'io.github.dvyadav.momsbrain.Launcher'
     }
-    archiveBaseName = 'MomsBrain'
+    archiveBaseName = 'MomsBrain'+Instant.now().getEpochSecond()
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar

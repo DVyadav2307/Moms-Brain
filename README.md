@@ -1,3 +1,4 @@
 ### Bot Should do
--  restrict to eng
+
 -  restict profanity
+    - use sqlite for ban data management
