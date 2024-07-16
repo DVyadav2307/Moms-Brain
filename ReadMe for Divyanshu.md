@@ -1,22 +1,14 @@
-## Bot should
 
-- ### on new member joining
-    - Greet
-    - describe guild rules
-    - describe Guild policy (promotion policy, nay other decided etc)
-    - introduce quick useful guild commands
+## decided:
+1. LLM feature 
 
-- ### notes specific
-    - Accept & upload notes
-    - Retrive notes
+2. Image generation for designers' inspiration
 
-- ### Profanity Handling
-    - Handle explicit images
-    - Handle profane language
+3. notes specific
+    todo: reward for notes upload
 
-- ### AI features
-    - provide LLM assitance like chatGPT, etc.
-    - Image generation for designers' inspiration
+4. Profanity Handling- Handle explicit images 
+    todo: libararies or api that diffrentiate explicit images
 
-
-*<b>Note</b>: We should consider whether the reponse from bot should be private or public for each feature.*
+5. Goal Setting feature  
+    todo: yet to clarify the exact flow of program
