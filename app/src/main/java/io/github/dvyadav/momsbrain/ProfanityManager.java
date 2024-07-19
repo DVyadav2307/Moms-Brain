@@ -1,13 +1,13 @@
 package io.github.dvyadav.momsbrain;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.stream.Stream;
 
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -27,13 +27,11 @@ public class ProfanityManager {
     /* pupolates the PROFANEWORDSET set from profanelist.txt file */
     public void loadProfaneWordset(){
 
-        try (InputStream inputStream = CUSSWORDSFILE.openStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-                String line;
-                while ((line = reader.readLine()) != null) profaneWordsSet.add(line.trim());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        try (Stream<String> lines = Files.lines(Path.of(CUSSWORDSFILE.toURI()))) {
+            lines.forEach(profaneWordsSet::add);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @SuppressWarnings("null")
