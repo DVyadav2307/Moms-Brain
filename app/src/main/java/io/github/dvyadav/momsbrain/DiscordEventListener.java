@@ -2,6 +2,8 @@ package io.github.dvyadav.momsbrain;
 
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
+import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
@@ -45,6 +47,16 @@ public class DiscordEventListener extends ListenerAdapter {
     @Override
     public void onMessageUpdate(MessageUpdateEvent event){
         profanityManager.handleProfanity(event.getMessage());
+    }
+
+    @Override
+    public void onSlashCommandInteraction(SlashCommandInteractionEvent event){
+    
+    }  
+
+    @Override
+    public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event){
+        // TODO:learn more on autocomplete commands
     }
 }
  
