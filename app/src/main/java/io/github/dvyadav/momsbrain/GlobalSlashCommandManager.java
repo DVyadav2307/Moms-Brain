@@ -3,6 +3,8 @@ package io.github.dvyadav.momsbrain;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hc.core5.http.nio.command.CommandSupport;
+
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -51,7 +53,18 @@ public class GlobalSlashCommandManager {
      * This method creates new commands and adds to List.
      */
     private static void prepareCommands(){
-         
+        cmdList.add(
+            Commands.slash("show_time", "show current time.")
+               .addOption(OptionType.BOOLEAN, "really", "enter true or false", true)  
+        );
+        cmdList.add(
+            Commands.slash("update_notes", "Updates the subjects and notes from bot's repo")
+        );
+        cmdList.add(
+            
+        )
+
+
         // TODO: add new Commands just above this line. ENSURE TO ADD THEM TO cmdList.
     }
 }
