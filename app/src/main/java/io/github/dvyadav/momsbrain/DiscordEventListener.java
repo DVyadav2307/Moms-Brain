@@ -5,6 +5,7 @@ import java.util.List;
 import com.google.api.services.drive.model.File;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
@@ -15,10 +16,13 @@ import net.dv8tion.jda.api.events.message.MessageUpdateEvent;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.commands.Command;
 
 @SuppressWarnings("null")
 public class DiscordEventListener extends ListenerAdapter {
 
+    // list of subject folders from drive (only for class use)
+    private List<File> subjFolders;
     
     /* Class to handle profanity moderation tasks */
     ProfanityManager  profanityManager = new ProfanityManager();
@@ -29,6 +33,9 @@ public class DiscordEventListener extends ListenerAdapter {
 
         /* thread to avoid delays on execution of other processes*/
         Thread.ofVirtual().start(() -> profanityManager.loadProfaneWordset());
+
+        // thread to initliaze google drive service
+        Thread.ofVirtual().start(() -> DriveResourceManager.initDriveService());
 
     }
 
@@ -58,13 +65,8 @@ public class DiscordEventListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event){
-        // list of subject folders in drive
-        List<File> subjectList = new ArrayList<>();
 
-
-        // update_notes command handling
-        // thids method prepares the list of subject folders
-        // and prompt bot users about avialable subjects
+        // list the available notes subject to user whne used "update_notes" command
         if(event.getName().equals("update_notes")){
             // private replies by bot only
             event.deferReply().setEphemeral(true).queue();
@@ -72,10 +74,10 @@ public class DiscordEventListener extends ListenerAdapter {
 
             try {
                 // retrive folder list from drive
-                subjectList = DriveResourceManager.getFolders();
+                subjFolders = DriveResourceManager.getFolders();
                 // prepare the names in one string
                 String subjectNames = "";
-                for (File file : subjectList) {
+                for (File file : subjFolders) {
                     if(!file.getName().equals("Notes_from_discord_server"))//exclude root folder name
                         subjectNames += "\n * "+file.getName();
                 }
@@ -84,7 +86,7 @@ public class DiscordEventListener extends ListenerAdapter {
                 
             } catch (Exception e) {
                 e.printStackTrace();
-                hook.sendMessage("Some error occured! Inform the admin");
+                hook.sendMessage("Some error occured! Inform the admin.");
             }
         }
 
@@ -102,10 +104,34 @@ public class DiscordEventListener extends ListenerAdapter {
                 msgHook.sendMessage("Fine false means no!").queue();
             }
         }
+
     }  
 
     @Override
     public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event){
+
+        // pull & display the names of the subjects from drive when user uses "notes_pull" command
+        if(event.getName().equals("pull_notes") && event.getFocusedOption().getName().equals("subject")){
+            try {
+                
+                // fetch subject folders from drive only once in command lifespan
+                if(event.getFocusedOption().getValue().equals("")){
+                    subjFolders = DriveResourceManager.getFolders();
+                }
+                // filter folders matching with search feild
+                // map to new Command.Choice object to create a new folder list
+                List<Command.Choice> optionChoice = subjFolders.stream().filter( folder -> folder.getName().toLowerCase().contains(event.getFocusedOption().getValue().toLowerCase()))
+                                    .map( folder -> new Command.Choice(folder.getName(), folder.getName()))
+                                    .collect(Collectors.toList());
+                // send the new folder list
+                event.replyChoices(optionChoice).queue();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Some error has occured! Inform the admin.");
+            }
+        }
+
+
         // TODO:learn more on autocomplete commands
     }
 }

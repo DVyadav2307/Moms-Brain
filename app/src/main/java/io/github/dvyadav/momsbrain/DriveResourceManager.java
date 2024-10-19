@@ -24,7 +24,7 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 public class DriveResourceManager {
     
     private static NetHttpTransport httpTransport;
-
+    private static Drive driveService;
     // feilds for drive service setup
     private static final String APPLICATION_NAME = "Mom_bot_Service_Account_Drive_Manager";
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
@@ -41,18 +41,18 @@ public class DriveResourceManager {
     }
 
     // create and return service object
-    public static Drive getDriveService(){
-        Drive driveService = null;
+    public static boolean initDriveService(){
+        
         try {
             httpTransport = GoogleNetHttpTransport.newTrustedTransport();
             driveService = new Drive.Builder(httpTransport, JSON_FACTORY, new HttpCredentialsAdapter(getCredentials()))
                                 .setApplicationName(APPLICATION_NAME)
                                 .build();
-            
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
         }
-        return driveService;
+        return true;
     }
 
     // returns the list of folders from storage
@@ -65,7 +65,7 @@ public class DriveResourceManager {
         String pageToken = null;
         do{
             // get list of all files and folders
-            FileList result = getDriveService().files().list()
+            FileList result = driveService.files().list()
             .setPageToken(pageToken)
             .setFields("nextPageToken, files(id, name, mimeType)")
             .execute();
@@ -82,7 +82,7 @@ public class DriveResourceManager {
     }
 
     public static void main(String[] args) {
-        DriveResourceManager.getDriveService();
+        DriveResourceManager.initDriveService();
         System.out.println("SUCCESS");
     }
 

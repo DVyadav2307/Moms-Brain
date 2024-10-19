@@ -61,8 +61,12 @@ public class GlobalSlashCommandManager {
             Commands.slash("update_notes", "Updates the subjects and notes from bot's repo")
         );
         cmdList.add(
-            
-        )
+            Commands.slash("pull_notes", "Get download links of subject notes.")
+                .addOptions(
+                    new OptionData(OptionType.STRING, "subject", "select/type subject", true)
+                        .setAutoComplete(true)  
+                )
+        );
 
 
         // TODO: add new Commands just above this line. ENSURE TO ADD THEM TO cmdList.
