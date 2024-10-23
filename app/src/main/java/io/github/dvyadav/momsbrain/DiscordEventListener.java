@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.google.api.services.drive.model.File;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -74,19 +75,16 @@ public class DiscordEventListener extends ListenerAdapter {
 
             try {
                 // retrive folder list from drive
-                subjFolders = DriveResourceManager.getFolders();
+                subjFolders = DriveResourceManager.getLatestFoldersList();
                 // prepare the names in one string
                 String subjectNames = "";
-                for (File file : subjFolders) {
-                    if(!file.getName().equals("Notes_from_discord_server"))//exclude root folder name
-                        subjectNames += "\n * "+file.getName();
-                }
+                for (File file : subjFolders)
+                subjectNames += "\n * "+file.getName();
                 // send list names
                 hook.sendMessage("Updated Successfully!! \nFollowing subject notes are avialble:-"+subjectNames).queue();
-                
             } catch (Exception e) {
                 e.printStackTrace();
-                hook.sendMessage("Some error occured! Inform the admin.");
+                hook.sendMessage("Some error occured! Inform the admin.").setEphemeral(true).queue();
             }
         }
 
@@ -116,18 +114,18 @@ public class DiscordEventListener extends ListenerAdapter {
                 
                 // fetch subject folders from drive only once in command lifespan
                 if(event.getFocusedOption().getValue().equals("")){
-                    subjFolders = DriveResourceManager.getFolders();
+                    subjFolders = DriveResourceManager.getLatestFoldersList();
                 }
                 // filter folders matching with search feild
                 // map to new Command.Choice object to create a new folder list
                 List<Command.Choice> optionChoice = subjFolders.stream().filter( folder -> folder.getName().toLowerCase().contains(event.getFocusedOption().getValue().toLowerCase()))
-                                    .map( folder -> new Command.Choice(folder.getName(), folder.getName()))
-                                    .collect(Collectors.toList());
+                                                                        .map( folder -> new Command.Choice(folder.getName(), folder.getName()))
+                                                                        .collect(Collectors.toList());
                 // send the new folder list
                 event.replyChoices(optionChoice).queue();
             } catch (Exception e) {
                 e.printStackTrace();
-                System.out.println("Some error has occured! Inform the admin.");
+                event.replyChoice("Couldn't load choice. Please inform admin!","EROR").queue();
             }
         }
 
