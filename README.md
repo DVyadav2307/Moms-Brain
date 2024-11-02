@@ -37,3 +37,25 @@ The Ultimate objective of this project is to build a discord bot with codebase t
          3. retrieve image as Ephermal
 
 4. **Goal Management**:TBD
+
+## Project Setup
+
+- Download this repository from [GitHub](https://github.com/DVyadav2307/Moms-Brain.git) or use following command in git-cli.
+  
+  ```bash
+  git clone https://github.com/DVyadav2307/Moms-Brain.git
+  ```
+- Navigate to root directory of prject and find the `gradlew` wrapper script.
+  ```bash
+  cd Moms-Brain
+  ```
+- Use the gradle wrapper scripts (`gradlew` or `gradlew.bat`) that are included in the repository to bild the project. Gradle will automatically manage dependency and setup of the project:
+
+  ```bash
+  gradlew build
+  ```
+
+- Once project build completed you need to obatin security keys and tokens for the project. [Contact me](mailto:divyanshuy858@gmail.com) to obatin the keys and integration tutorials. You may like to join my discord channel:
+```
+https://discord.gg/WaDExnaMkU
+```
