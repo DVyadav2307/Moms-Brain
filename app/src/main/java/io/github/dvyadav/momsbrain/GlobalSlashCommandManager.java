@@ -3,12 +3,9 @@ package io.github.dvyadav.momsbrain;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.hc.core5.http.nio.command.CommandSupport;
-
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
-import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 
 /**
  * <p>
@@ -48,7 +45,9 @@ public class GlobalSlashCommandManager {
         return cmdList;
     }
 
+    //TODO: Urgent need to create a delete notes commmand (avaible only to admin role)
 
+    
     /**
      * This method creates new commands and adds to List.
      */
@@ -62,12 +61,16 @@ public class GlobalSlashCommandManager {
         );
         cmdList.add(
             Commands.slash("pull_notes", "Get download links of subject notes.")
-                .addOptions(
-                    new OptionData(OptionType.STRING, "subject", "select/type subject", true)
-                        .setAutoComplete(true)  
+                .addOption(
+                    OptionType.STRING, "subject", "select/type subject", true, true
                 )
         );
-
+        cmdList.add(
+            Commands.slash("push_notes", "Upload notes and be a good boy/girl")
+                .addOption(OptionType.STRING, "subject", "Select the subject of notes. If not in list then select \'Others\' and inform the admin", true, true)
+                .addOption(OptionType.ATTACHMENT, "attachment", "Attach the notes", true)
+                .addOption(OptionType.STRING, "topics", "Enter the topic names saperated by commas.", true)
+        );
 
         // TODO: add new Commands just above this line. ENSURE TO ADD THEM TO cmdList.
     }

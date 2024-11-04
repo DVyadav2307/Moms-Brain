@@ -1,14 +1,13 @@
 package io.github.dvyadav.momsbrain;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.api.services.drive.model.File;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.Message.Attachment;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -66,9 +65,38 @@ public class DiscordEventListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event){
+        
+        // upload notes to appropriate folder on google-drive
+        if(event.getName().equals("push_notes")){
+
+
+            // bot reply privately, use hook fro reply to the messege
+            event.deferReply().setEphemeral(true).queue();
+            InteractionHook hook = event.getHook();
+            
+            try {
+                String subject = event.getOption("subject").getAsString();
+                Attachment file = event.getOption("attachment").getAsAttachment();
+                // store the  topics name in a list  after removal of whitespaces
+               String topics = event.getOption("topics").getAsString().trim();
+                // uploading the file
+                DriveResourceManager.uploadFile(file.getUrl(), file.getFileName(), file.getContentType(),topics, subject, event.getMember().getEffectiveName());
+
+                // responses by bot to user
+                hook.sendMessage("Uploaded Successfully!. \nThanks for sharing the resource with others.").queue();
+                event.getChannel().sendMessage("@everyone New material added in "+subject+" by "+event.getMember().getEffectiveName()+":star_struck:").queue();
+                
+            }catch (IOException e) {
+                e.printStackTrace();
+                hook.sendMessage("Couldn't Upload your File. Please Inform Admin");
+            }
+            return;
+        }
 
         // list the available notes subject to user whne used "update_notes" command
         if(event.getName().equals("update_notes")){
+
+
             // private replies by bot only
             event.deferReply().setEphemeral(true).queue();
             InteractionHook hook = event.getHook();
@@ -82,10 +110,11 @@ public class DiscordEventListener extends ListenerAdapter {
                 subjectNames += "\n * "+file.getName();
                 // send list names
                 hook.sendMessage("Updated Successfully!! \nFollowing subject notes are avialble:-"+subjectNames).queue();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 e.printStackTrace();
                 hook.sendMessage("Some error occured! Inform the admin.").setEphemeral(true).queue();
             }
+            return;
         }
 
 
@@ -101,6 +130,7 @@ public class DiscordEventListener extends ListenerAdapter {
             }else{
                 msgHook.sendMessage("Fine false means no!").queue();
             }
+            return;
         }
 
     }  
@@ -108,8 +138,11 @@ public class DiscordEventListener extends ListenerAdapter {
     @Override
     public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event){
 
-        // pull & display the names of the subjects from drive when user uses "notes_pull" command
-        if(event.getName().equals("pull_notes") && event.getFocusedOption().getName().equals("subject")){
+        // pull & display the names of the subjects from drive when user uses "pull_notes" or "push_notes" command
+        if(
+            (event.getName().equals("pull_notes") || event.getName().equals("push_notes")) 
+            &&  event.getFocusedOption().getName().equals("subject")
+        ){
             try {
                 
                 // fetch subject folders from drive only once in command lifespan

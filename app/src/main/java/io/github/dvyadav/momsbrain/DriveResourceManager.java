@@ -2,12 +2,18 @@ package io.github.dvyadav.momsbrain;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.security.GeneralSecurityException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -127,6 +133,41 @@ public class DriveResourceManager {
         }
 
     }
+
+
+    // upload files to drive in a specific folder
+    public static void uploadFile(String fileUrl,String fileName, String fileType, String topics, String folderName, String uploaderName)throws IOException{
+        // create inforamtion of file
+        File fileMetadata  = new File();
+        fileMetadata.setName(ZonedDateTime.now(ZoneId.of("GMT"))+"_"+uploaderName+"_"+fileName);//TODO:what should be names of the notes uploaded maybe date+uploader name??
+        // filtering desired folder and obatin id()
+        fileMetadata.setParents(getMostRecentFolderList().stream()
+                                                        .filter(fl->fl.getName().equals(folderName))
+                                                        .map(File::getId)//fl->fl.getId()
+                                                        .collect(Collectors.toList()));
+        fileMetadata.setDescription(topics);
+        // download inputstream of actual file via http connection
+        @SuppressWarnings("deprecation")
+        HttpURLConnection con = (HttpURLConnection) (new URL(fileUrl).openConnection());
+        con.setRequestMethod("GET");
+        con.connect();
+        // inject inputstream and upload if connection OK
+        if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
+            //uploading file
+            File uploadedFile = driveService.files().create(fileMetadata, new InputStreamContent(fileType, con.getInputStream()))
+                                            .setFields("id, name, mimeType")
+                                            .execute();
+            // upadating offline list of available notes
+            mostRecentfilesList.add(uploadedFile);
+        }else{
+            // error while laoding file from discord server
+            throw new IOException("Problem while fetching file via url");
+        }
+
+    }
+
+
+    // TODO:create a function for downloading file
 
     public static void main(String[] args) {
         DriveResourceManager.initDriveService();
