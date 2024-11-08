@@ -7,38 +7,13 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 
-/**
- * <p>
- * This class manages slash command avaible globally 
- * with bot. It prepares the {@code List} of 
- * {@code Commands} objectand return the {@code List} 
- * staically as:
- * <pre>
- * {@code
- *  GlobalSlashCommandmanager.getCommandsAsList();
- * }
- * </pre>
- * 
- * @author Divyanshu Yadav
- */
-public class GlobalSlashCommandManager {
-
-
+//This Class generates "Mom's Basement" server specific interaction commands
+public class MomBasementSlashCommandManager {
     
     // Arraylist to store commands, to be fed to addCommand() Method
     private static List<CommandData> cmdList = new ArrayList<>();
 
 
-    /**
-     * <p>This methods return the prepared 
-     * {@code List<Commands>} of commands.</p>
-     * 
-     * <p>Through this method, {@code Commands} 
-     * objects are created and aded to List.
-     * Then the prepared List is returned.</p>
-     * 
-     * @return List of Commands
-     */
     public static List<CommandData> getCommandsAsList(){
         cmdList.clear();
         prepareCommands();
@@ -48,9 +23,6 @@ public class GlobalSlashCommandManager {
     //TODO: Urgent need to create a delete notes commmand (avaible only to admin role)
 
     
-    /**
-     * This method creates new commands and adds to List.
-     */
     private static void prepareCommands(){
         cmdList.add(
             Commands.slash("show_time", "show current time.")

@@ -29,14 +29,31 @@ public class DiscordEventListener extends ListenerAdapter {
     
     @Override
     public void onReady(ReadyEvent event){
-        System.out.println("___THE BOT IS READY___");
-
+       
         /* thread to avoid delays on execution of other processes*/
         Thread.ofVirtual().start(() -> profanityManager.loadProfaneWordset());
 
         // thread to initliaze google drive service
         Thread.ofVirtual().start(() -> DriveResourceManager.initDriveService());
 
+        // deleting global commands when bot reboots
+        event.getJDA().retrieveCommands().queue(c->c.forEach(Command::delete));
+
+        // deleting  every guilds commnds when bot reboots
+        event.getJDA().getGuilds().forEach(guild->{
+            guild.retrieveCommands().queue(cmdList->{
+                cmdList.forEach(Command::delete);
+            });
+        });
+
+        // TODO:Decide Global and Guild Commands and implement accordingly
+
+        // Server specific command for "MOM'S BASEMENT"
+        event.getJDA().getGuildsByName("Mom's Basement", false).get(0)
+        .updateCommands().addCommands(MomBasementSlashCommandManager.getCommandsAsList()).queue();
+
+        
+        System.out.println("BoTs Is ReAdY!!");
     }
 
     @Override
