@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 
 public class ProfanityManager {
 
@@ -72,6 +73,7 @@ public class ProfanityManager {
                 user.openPrivateChannel().queue(privateChannel ->{
                     /*  Warn/Inform User in DM */
                     privateChannel.sendMessage(kickedUserDMReply).queue(e ->{
+                        e.addReaction(Emoji.fromFormatted("U+1F480")).queue();
                         /* then sequentially Kick user from Server */
                         chatMsg.getGuild().kick(user).queue();
                         clearUserAbuseRecrd(user.getIdLong());
@@ -93,7 +95,7 @@ public class ProfanityManager {
             increaseUserAbuseCount(user.getIdLong());
 
             chatMsg.reply(warnMsg[(int)(Math.random() * 3)]).queue(e ->{
-
+                e.addReaction(Emoji.fromFormatted("U+003"+getUserAbuseCount(user.getIdLong())+" U+FE0F U+20E3")).queue();
                 serverOwner.getUser().openPrivateChannel().queue(privateChannel -> {
                     privateChannel.sendMessage(warnReportToOwner).queue();
                 });

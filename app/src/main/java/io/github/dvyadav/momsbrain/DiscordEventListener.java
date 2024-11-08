@@ -120,7 +120,7 @@ public class DiscordEventListener extends ListenerAdapter {
 
             try {
                 // retrive folder list from drive
-                subjFolders = DriveResourceManager.getLatestFoldersList();
+                subjFolders = DriveResourceManager.getMostRecentFolderList();/* TODO:monitor behaviour and use getLatestFoldersList() if required */
                 // prepare the names in one string
                 String subjectNames = "";
                 for (File file : subjFolders)
