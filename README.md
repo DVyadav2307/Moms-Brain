@@ -5,7 +5,7 @@
 
 The Ultimate objective of this project is to build a discord bot with codebase that is:
 - **Concise**: remove un-necessary task as much as possible
-- **Resource Efficient**: use concurrency etc.
+- **Resource Efficient**: use of concurrency etc.
 - **Light and Small in Size**: project should be much smaller to deploy on ARM chip based computers
 
 
