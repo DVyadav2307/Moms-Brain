@@ -2,6 +2,7 @@ package io.github.dvyadav.momsbrain;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.google.api.services.drive.model.File;
@@ -17,6 +18,7 @@ import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.Command;
+import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("null")
 public class DiscordEventListener extends ListenerAdapter {
@@ -31,15 +33,15 @@ public class DiscordEventListener extends ListenerAdapter {
     public void onReady(ReadyEvent event){
        
         /* thread to avoid delays on execution of other processes*/
-        Thread.ofVirtual().start(() -> profanityManager.loadProfaneWordset());
+        Thread.ofVirtual().start(() -> profanityManager.loadProfaneWordSet());
 
-        // thread to initliaze google drive service
-        Thread.ofVirtual().start(() -> DriveResourceManager.initDriveService());
+        // thread to initialize Google Drive service
+        Thread.ofVirtual().start(DriveResourceManager::initDriveService);
 
         // deleting global commands when bot reboots
         event.getJDA().retrieveCommands().queue(c->c.forEach(Command::delete));
 
-        // deleting  every guilds commnds when bot reboots
+        // deleting every guild command when bot reboots
         event.getJDA().getGuilds().forEach(guild->{
             guild.retrieveCommands().queue(cmdList->{
                 cmdList.forEach(Command::delete);
@@ -49,7 +51,7 @@ public class DiscordEventListener extends ListenerAdapter {
         // TODO:Decide Global and Guild Commands and implement accordingly
 
         // Server specific command for "MOM'S BASEMENT"
-        event.getJDA().getGuildsByName("Mom's Basement", false).get(0)
+        event.getJDA().getGuildsByName("Mom's Basement", false).getFirst()
         .updateCommands().addCommands(MomBasementSlashCommandManager.getCommandsAsList()).queue();
 
         
@@ -57,7 +59,7 @@ public class DiscordEventListener extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMemberJoin(GuildMemberJoinEvent event){
+    public void onGuildMemberJoin(@NotNull GuildMemberJoinEvent event){
 
         
     }
@@ -66,10 +68,10 @@ public class DiscordEventListener extends ListenerAdapter {
     public void onMessageReceived(MessageReceivedEvent event){
         Message chatMsg = event.getMessage();
 
-        /* ignore messeges from bots */
+        /* ignore messages from bots */
         if(event.getAuthor().isBot()) return;
 
-        /* Handle cuss chats in saperate thread */
+        /* Handle cuss chats in separate thread */
         Thread.ofVirtual().start(()-> profanityManager.handleProfanity(chatMsg));
 
     }
@@ -87,17 +89,17 @@ public class DiscordEventListener extends ListenerAdapter {
         if(event.getName().equals("push_notes")){
 
 
-            // bot reply privately, use hook fro reply to the messege
+            // bot reply privately, use hook for reply to the message
             event.deferReply().setEphemeral(true).queue();
             InteractionHook hook = event.getHook();
             
             try {
-                String subject = event.getOption("subject").getAsString();
-                Attachment file = event.getOption("attachment").getAsAttachment();
-                // store the  topics name in a list  after removal of whitespaces
-               String topics = event.getOption("topics").getAsString().trim();
+                String subject = Objects.requireNonNull(event.getOption("subject")).getAsString();
+                Attachment file = Objects.requireNonNull(event.getOption("attachment")).getAsAttachment();
+                // store the topic name in a list after removal of whitespaces
+               String topics = Objects.requireNonNull(event.getOption("topics")).getAsString().trim();
                 // uploading the file
-                DriveResourceManager.uploadFile(file.getUrl(), file.getFileName(), file.getContentType(),topics, subject, event.getMember().getEffectiveName());
+                DriveResourceManager.uploadFile(file.getUrl(), file.getFileName(), file.getContentType(),topics, subject, Objects.requireNonNull(event.getMember()).getEffectiveName());
 
                 // responses by bot to user
                 hook.sendMessage("Uploaded Successfully!. \nThanks for sharing the resource with others.").queue();
@@ -110,7 +112,7 @@ public class DiscordEventListener extends ListenerAdapter {
             return;
         }
 
-        // list the available notes subject to user whne used "update_notes" command
+        // list the available notes subject to user when used "update_notes" command
         if(event.getName().equals("update_notes")){
 
 
@@ -119,12 +121,11 @@ public class DiscordEventListener extends ListenerAdapter {
             InteractionHook hook = event.getHook();
 
             try {
-                // retrive folder list from drive
+                // retrieve a folder list from drive
                 subjFolders = DriveResourceManager.getMostRecentFolderList();/* TODO:monitor behaviour and use getLatestFoldersList() if required */
                 // prepare the names in one string
-                String subjectNames = "";
-                for (File file : subjFolders)
-                subjectNames += "\n * "+file.getName();
+                StringBuilder subjectNames = new StringBuilder();
+                for (File file : subjFolders) subjectNames.append("\n * ").append(file.getName());
                 // send list names
                 hook.sendMessage("Updated Successfully!! \nFollowing subject notes are avialble:-"+subjectNames).queue();
             } catch (IOException e) {
@@ -138,11 +139,11 @@ public class DiscordEventListener extends ListenerAdapter {
 
 
 
-        //DEMO: time coammnd interaction
+        //DEMO: time command interaction
         if (event.getName().equals("show_time")) {
             event.deferReply().setEphemeral(true).queue();
             InteractionHook msgHook = event.getHook();
-            if(event.getOption("really").getAsBoolean() == true){
+            if(Objects.requireNonNull(event.getOption("really")).getAsBoolean()){
                 msgHook.sendMessage("I dont know what time it is! \nBut I am sure its late.").queue();
             }else{
                 msgHook.sendMessage("Fine false means no!").queue();
@@ -155,7 +156,7 @@ public class DiscordEventListener extends ListenerAdapter {
     @Override
     public void onCommandAutoCompleteInteraction(CommandAutoCompleteInteractionEvent event){
 
-        // pull & display the names of the subjects from drive when user uses "pull_notes" or "push_notes" command
+        // pull and display the names of the subjects from drive when a user uses "pull_notes" or "push_notes" command
         if(
             (event.getName().equals("pull_notes") || event.getName().equals("push_notes")) 
             &&  event.getFocusedOption().getName().equals("subject")
@@ -163,11 +164,11 @@ public class DiscordEventListener extends ListenerAdapter {
             try {
                 
                 // fetch subject folders from drive only once in command lifespan
-                if(event.getFocusedOption().getValue().equals("")){
+                if(event.getFocusedOption().getValue().isEmpty()){
                     subjFolders = DriveResourceManager.getLatestFoldersList();
                 }
                 // filter folders matching with search feild
-                // map to new Command.Choice object to create a new folder list
+                // map to a new Command.Choice object to create a new folder list
                 List<Command.Choice> optionChoice = subjFolders.stream().filter( folder -> folder.getName().toLowerCase().contains(event.getFocusedOption().getValue().toLowerCase()))
                                                                         .map( folder -> new Command.Choice(folder.getName(), folder.getName()))
                                                                         .collect(Collectors.toList());

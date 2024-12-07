@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 public class MomBasementSlashCommandManager {
     
     // Arraylist to store commands, to be fed to addCommand() Method
-    private static List<CommandData> cmdList = new ArrayList<>();
+    private static final List<CommandData> cmdList = new ArrayList<>();
 
 
     public static List<CommandData> getCommandsAsList(){

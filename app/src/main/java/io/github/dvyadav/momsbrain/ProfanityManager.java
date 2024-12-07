@@ -16,20 +16,23 @@ import net.dv8tion.jda.api.entities.emoji.Emoji;
 
 public class ProfanityManager {
 
-    /* fetching path of file containing profane words */
-    private final URL CUSSWORDSFILE =getClass().getResource("profaneList.txt");
+    /* fetching a path of file containing profane words */
+    private final URL CROSSWORD =getClass().getResource("profaneList.txt");
 
-    /* Stores profane word list from file */
-    private HashSet<String> profaneWordsSet = new HashSet<>();
+    /* Stores profane word list from a file */
+    private final HashSet<String> profaneWordsSet = new HashSet<>();
 
-    /* Stores the user with abuse count */
-    private HashMap<Long, Integer> abuseRecords = new HashMap<>();
+    /* Stores the user with abuse counts */
+    private final HashMap<Long, Integer> abuseRecords = new HashMap<>();
 
-    /* pupolates the PROFANEWORDSET set from profanelist.txt file */
-    public void loadProfaneWordset(){
+    /* populates the PROFANENESS set from profaneList.txt file */
+    public void loadProfaneWordSet(){
 
-        try (Stream<String> lines = Files.lines(Path.of(CUSSWORDSFILE.toURI()))) {
-            lines.forEach(profaneWordsSet::add);
+        try {
+            assert CROSSWORD != null;
+            try (Stream<String> lines = Files.lines(Path.of(CROSSWORD.toURI()))) {
+                lines.forEach(profaneWordsSet::add);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -40,10 +43,10 @@ public class ProfanityManager {
 
         if(isChatProfane(chatMsg.getContentStripped())){
 
-            /* varibale must be declared after profanity check
+            /* variable must be declared after a profanity check
              * to ensure the use of memory only at neccesary times. */
             User user = chatMsg.getAuthor();
-            /* retrives owner from caches */
+            /* retries owner from caches */
             Member serverOwner = chatMsg.getGuild().retrieveOwner().complete();
 
             String msgTimeDate = chatMsg.getTimeCreated().atZoneSameInstant(ZoneId.of("Asia/Kolkata"))
@@ -65,9 +68,9 @@ public class ProfanityManager {
             
 
             /* User exceeds the limit of 5 abuses in server 
-             * -inform kicking action to abuser
-             * -kick user
-             * -report action to user. */
+             * - inform kicking action to abuser
+             * kick user
+             * report action to user. */
             if(getUserAbuseCount(user.getIdLong()) > 4){
                 
                 user.openPrivateChannel().queue(privateChannel ->{
@@ -76,7 +79,7 @@ public class ProfanityManager {
                         e.addReaction(Emoji.fromFormatted("U+1F480")).queue();
                         /* then sequentially Kick user from Server */
                         chatMsg.getGuild().kick(user).queue();
-                        clearUserAbuseRecrd(user.getIdLong());
+                        clearUserAbuseRecord(user.getIdLong());
                     });
                 });
                 
@@ -89,9 +92,9 @@ public class ProfanityManager {
             }
 
             /* If user under the limit of 5 abuses
-             * -Increase abuse count
-             * -warn to user in channel
-             * -report to owner in DM. */
+             * - Increase abuse count
+             * - warn to user in a channel
+             * - report to an owner in DM. */
             increaseUserAbuseCount(user.getIdLong());
 
             chatMsg.reply(warnMsg[(int)(Math.random() * 3)]).queue(e ->{
@@ -104,11 +107,11 @@ public class ProfanityManager {
         }
     }
 
-    /* matches each word from chat with profane list and returns accordingly */
+    /* matches each word from chat with profaneList and returns accordingly */
     private boolean isChatProfane(String chatMsgString){
 
         String[] words = chatMsgString                     /* preloaded with removed text formatting (see method call)*/                          
-        .toLowerCase()                                     /* list is in LowerCase so words should be in LC too */
+        .toLowerCase()                                     /* the list is in LowerCase so words should be in LC too */
         .split("\\s+|,\\s*|\\.\\s*|\\?\\s*|!\\s*");  /* spilt sentence to words acc to regex */
 
         for (String word : words) {
@@ -132,7 +135,7 @@ public class ProfanityManager {
     }
 
     /* clear the user abuse count */
-    private void clearUserAbuseRecrd(Long useId){
+    private void clearUserAbuseRecord(Long useId){
         abuseRecords.remove(useId);
     }
 }

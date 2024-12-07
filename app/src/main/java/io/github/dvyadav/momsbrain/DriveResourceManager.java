@@ -10,6 +10,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -26,44 +27,40 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 
 public class DriveResourceManager {
-    
-    // feilds for drive service setup
-    private static NetHttpTransport httpTransport;
+
     private static Drive driveService;
     private static final String APPLICATION_NAME = "Mom_bot_Service_Account_Drive_Manager";
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
     
-    private static List<File> mostRecentfoldersList = new ArrayList<>();
-    private static List<File> mostRecentfilesList = new ArrayList<>();
-    private static final String rootFolderName = "Notes_from_discord_server"; //this is parent of all the files and folders on drive
+    private static final List<File> mostRecentfoldersList = new ArrayList<>();
+    private static final List<File> mostRecentfilesList = new ArrayList<>();
+    private static final String rootFolderName = "Notes_from_discord_server"; //this is a parent of all the files and folders on the drive
     
     
     private DriveResourceManager(){}
     
-    // authenticate credentails to obtain access of the drive
-    private static GoogleCredentials getCredentials() throws IOException, GeneralSecurityException{  
-    GoogleCredentials credentials = ServiceAccountCredentials.fromStream(
-        new FileInputStream(DriveResourceManager.class.getResource("credentials.json").getPath().replaceAll("%20", " ")))
-        .createScoped(SCOPES);
-        return credentials;
+    // authenticate credentials to get access of the drive
+    private static GoogleCredentials getCredentials() throws IOException, GeneralSecurityException{
+        return ServiceAccountCredentials.fromStream(
+            new FileInputStream(Objects.requireNonNull(DriveResourceManager.class.getResource("credentials.json")).getPath().replaceAll("%20", " ")))
+            .createScoped(SCOPES);
     }    
     
     // create and return service object
-    public static boolean initDriveService(){
+    public static void initDriveService(){
         
         try {
-            httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+            // fields for drive service setup
+            NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
             // setting driveService
             driveService = new Drive.Builder(httpTransport, JSON_FACTORY, new HttpCredentialsAdapter(getCredentials()))
             .setApplicationName(APPLICATION_NAME)
             .build();
         } catch (Exception e) {                    
             e.printStackTrace();
-            return false;
-        }    
-        return true;
-    }    
+        }
+    }
         
     // return all files and folders as one complete list of entities
     private static List<File> getDriveEntityList() throws IOException{
@@ -74,7 +71,7 @@ public class DriveResourceManager {
         // loop till all pages ends
         String pageToken = null;
         do{
-            // get list of all files and folders
+            // get a list of all files and folders
             FileList result = driveService.files().list()
             .setPageToken(pageToken)
             .setFields("nextPageToken, files(id, name, mimeType)")
@@ -93,9 +90,9 @@ public class DriveResourceManager {
         
         mostRecentfoldersList.clear();
         // filter only folders excluding root folder and updating old folder list
-            for (File enity : getDriveEntityList()) {
-                if(enity.getMimeType().equals("application/vnd.google-apps.folder") && !(enity.getName().equals(rootFolderName)))
-                    mostRecentfoldersList.add(enity);
+            for (File entity : getDriveEntityList()) {
+                if(entity.getMimeType().equals("application/vnd.google-apps.folder") && !(entity.getName().equals(rootFolderName)))
+                    mostRecentfoldersList.add(entity);
             }        
         return mostRecentfoldersList;
     }    
@@ -104,7 +101,7 @@ public class DriveResourceManager {
     public static List<File> getLatestFilesList() throws IOException{
 
         mostRecentfilesList.clear();
-            // filter only files and update old file list
+            // filter only files and update an old file list
             for (File entity : getDriveEntityList()) {
                 if(! entity.getMimeType().equals("application/vnd.google-apps.folder"))
                     mostRecentfilesList.add(entity);
@@ -112,9 +109,9 @@ public class DriveResourceManager {
         return mostRecentfilesList;
     }    
 
-    // return presaved folder list instead of using api calls
+    // return a resaved folder list instead of using api calls
     public static List<File> getMostRecentFolderList() throws IOException{
-        // if null then use api call
+        // if null, then use api call
         if(mostRecentfoldersList.isEmpty()){
             return getLatestFoldersList();
         }else{
@@ -123,9 +120,9 @@ public class DriveResourceManager {
 
     }
 
-    // return presaved files list instead of using api calls
+    // return a resaved files list instead of using api calls
     public static List<File> getMostRecentFileList() throws IOException{
-        // if null then use api call
+        // if null, then use api call
         if(mostRecentfilesList.isEmpty()){
             return getLatestFilesList();
         }else{
@@ -137,30 +134,30 @@ public class DriveResourceManager {
 
     // upload files to drive in a specific folder
     public static void uploadFile(String fileUrl,String fileName, String fileType, String topics, String folderName, String uploaderName)throws IOException{
-        // create inforamtion of file
+        // create information of a file
         File fileMetadata  = new File();
         fileMetadata.setName(ZonedDateTime.now(ZoneId.of("GMT"))+"_"+uploaderName+"_"+fileName);//TODO:what should be names of the notes uploaded maybe date+uploader name??
-        // filtering desired folder and obatin id()
+        // filtering desired folder and obtain id()
         fileMetadata.setParents(getMostRecentFolderList().stream()
                                                         .filter(fl->fl.getName().equals(folderName))
                                                         .map(File::getId)//fl->fl.getId()
                                                         .collect(Collectors.toList()));
         fileMetadata.setDescription(topics);
-        // download inputstream of actual file via http connection
+        // download input stream of an actual file via http connection
         @SuppressWarnings("deprecation")
         HttpURLConnection con = (HttpURLConnection) (new URL(fileUrl).openConnection());
         con.setRequestMethod("GET");
         con.connect();
-        // inject inputstream and upload if connection OK
+        // inject input stream and upload if connection OK
         if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
             //uploading file
             File uploadedFile = driveService.files().create(fileMetadata, new InputStreamContent(fileType, con.getInputStream()))
                                             .setFields("id, name, mimeType")
                                             .execute();
-            // upadating offline list of available notes
+            // updating an offline list of available notes
             mostRecentfilesList.add(uploadedFile);
         }else{
-            // error while laoding file from discord server
+            // error while loading a file from discord server
             throw new IOException("Problem while fetching file via url");
         }
 
