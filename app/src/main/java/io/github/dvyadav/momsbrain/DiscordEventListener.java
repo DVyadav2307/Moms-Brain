@@ -151,7 +151,7 @@ public class DiscordEventListener extends ListenerAdapter {
 
 
             // list the available notes subject to user whne used "update_notes" command
-            if(event.getName().equals("update_notes")){
+            if(event.getName().equals("show_available_subjects")){
 
                 // private replies by bot only
                 event.deferReply().setEphemeral(true).queue();

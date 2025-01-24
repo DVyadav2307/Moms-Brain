@@ -29,7 +29,7 @@ public class MomBasementSlashCommandManager {
                .addOption(OptionType.BOOLEAN, "really", "enter true or false", true)  
         );
         cmdList.add(
-            Commands.slash("update_notes", "Updates the subjects and notes from bot's repo")
+            Commands.slash("show_available_subjects", "Updates the subjects and notes from bot's repo")
         );
         cmdList.add(
             Commands.slash("pull_notes", "Get download links of subject notes.")

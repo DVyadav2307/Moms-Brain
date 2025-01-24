@@ -11,22 +11,22 @@ The Ultimate objective of this project is to build a discord bot with codebase t
 
 ## Features as Objectives
 
-1. **Notes Management**:`(Private Resposive feature)`
-    1. Slash command to upload and download notes
-    2. Use Google Drive API to upload documents to respective folder
-    3. Download notes according to details as Ephemeral
+1. **Notes Management**:  **`ACHIEVED ✅`**
+    1. ~~Slash command to upload and download notes~~ 
+    2. ~~Use Google Drive API to upload documents to respective folder~~ 
+    3. ~~Download notes according to details *`(Private Resposive feature)`*~~
 
 2. **Profanity Handling**:
-    1. **Explicit Text**:
-        1. Identify abusive token
-        2. warn user `(Public Resposive Feature)` & report to server owner
-        3. kick if exceed limit & report to user an owner
+    1. ~~**Explicit Text**:~~ **`ACHIEVED ✅`**
+        1. ~~Identify abusive token~~
+        2. ~~warn user *`(Public Resposive Feature)`* & report to server owner~~
+        3. ~~kick if exceed limit & report to user an owner~~
     2. **Explicit Images**:
         1. Identify Image
         2. Delete image if explicit
         3. Report to User and server owner
 
-3. **AI Features**:`(Public and Private Responsive Feature)`
+3. **AI Features**: *`(Public and Private Responsive Feature)`*
     1. **Text generation**:
          1. Slash Command to send request
          2. API or Lib connectivity
