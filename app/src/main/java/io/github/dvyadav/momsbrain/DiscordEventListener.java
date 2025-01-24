@@ -54,6 +54,7 @@ public class DiscordEventListener extends ListenerAdapter {
 
         
         System.out.println("BoTs Is ReAdY!!");
+        
     }
 
     @Override
@@ -105,7 +106,8 @@ public class DiscordEventListener extends ListenerAdapter {
                 
             }catch (IOException e) {
                 e.printStackTrace();
-                hook.sendMessage("Couldn't Upload your File. Please Inform Admin");
+                hook.sendMessage(":warning:Couldn't Upload your File.\n"+
+                                 "Reason: "+ e.getMessage()).queue();
             }
             return;
         }

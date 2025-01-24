@@ -37,8 +37,7 @@ public class DriveResourceManager {
     private static List<File> mostRecentfoldersList = new ArrayList<>();
     private static List<File> mostRecentfilesList = new ArrayList<>();
     private static final String rootFolderName = "Notes_from_discord_server"; //this is parent of all the files and folders on drive
-    
-    
+
     private DriveResourceManager(){}
     
     // authenticate credentails to obtain access of the drive
@@ -141,10 +140,16 @@ public class DriveResourceManager {
         File fileMetadata  = new File();
         fileMetadata.setName(ZonedDateTime.now(ZoneId.of("GMT"))+"_"+uploaderName+"_"+fileName);//TODO:what should be names of the notes uploaded maybe date+uploader name??
         // filtering desired folder and obatin id()
-        fileMetadata.setParents(getMostRecentFolderList().stream()
+        List<String> parentsIdList = getMostRecentFolderList().stream()
                                                         .filter(fl->fl.getName().equals(folderName))
                                                         .map(File::getId)//fl->fl.getId()
-                                                        .collect(Collectors.toList()));
+                                                        .collect(Collectors.toList());
+        //ensure that subject is select from options list
+        if(parentsIdList.isEmpty() || parentsIdList == null){
+            throw new IOException("This Subject is not available yet.\nPlease select appropriate subject name from the option list.");
+        }
+
+        fileMetadata.setParents(parentsIdList);
         fileMetadata.setDescription(topics);
         // download inputstream of actual file via http connection
         @SuppressWarnings("deprecation")
@@ -164,6 +169,23 @@ public class DriveResourceManager {
             throw new IOException("Problem while fetching file via url");
         }
 
+    }
+
+    //WARNING: destructive operation! use carefully.
+    private static void deleteAllFiles(){
+        try {
+        getMostRecentFileList().forEach(file->{
+                try {
+                    driveService.files().delete(file.getId()).execute();
+                } catch (IOException e) {
+                    System.out.println("Couldnt delete file: "+ file.getName()+
+                                        "Reason: "+ e.getMessage());
+                }
+            });
+            System.out.println("Deletion Success");
+        } catch (Exception e) {
+            System.out.println("Exectio: Problem in fetching File List \n"+e.getMessage());
+        }
     }
 
 
