@@ -36,9 +36,10 @@ public class MomBasementSlashCommandManager {
                 .addOption(
                     OptionType.STRING, "subject", "select/type subject", true, true
                 )
+                .addOption(OptionType.STRING, "topics", "Use comma as saparator for mutiple topics", true)
         );
         cmdList.add(
-            Commands.slash("push_notes", "Upload notes and be a good boy/girl")
+            Commands.slash("push_notes", "Upload notes and be a good boy/girl. Max Size: 10 MB")
                 .addOption(OptionType.STRING, "subject", "Select the subject of notes. If not in list then select \'Others\' and inform the admin", true, true)
                 .addOption(OptionType.ATTACHMENT, "attachment", "Attach the notes", true)
                 .addOption(OptionType.STRING, "topics", "Enter the topic names saperated by commas.", true)

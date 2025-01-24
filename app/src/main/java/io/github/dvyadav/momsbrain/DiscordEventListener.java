@@ -30,7 +30,7 @@ public class DiscordEventListener extends ListenerAdapter {
     @Override
     public void onReady(ReadyEvent event){
        
-        /* thread to avoid delays on execution of other processes*/
+        // thread to avoid delays on execution of other processes
         Thread.ofVirtual().start(() -> profanityManager.loadProfaneWordset());
 
         // thread to initliaze google drive service
@@ -52,9 +52,13 @@ public class DiscordEventListener extends ListenerAdapter {
         event.getJDA().getGuildsByName("Mom's Basement", false).get(0)
         .updateCommands().addCommands(MomBasementSlashCommandManager.getCommandsAsList()).queue();
 
-        
-        System.out.println("BoTs Is ReAdY!!");
-        
+        // Ready reminder
+        event.getJDA().getGuilds().forEach(guild->{
+            guild.getTextChannels()
+            .getFirst()
+            .sendMessage("I have **Succesfully Booted Up**. Glad to be alive again! :robot::sparkles:")
+            .queue();
+        });
     }
 
     @Override
@@ -83,75 +87,112 @@ public class DiscordEventListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event){
-        
-        // upload notes to appropriate folder on google-drive
-        if(event.getName().equals("push_notes")){
+        //this virtual thread prevents bot from freezing.
+        Thread.ofVirtual().start(()->{
 
 
-            // bot reply privately, use hook fro reply to the messege
-            event.deferReply().setEphemeral(true).queue();
-            InteractionHook hook = event.getHook();
-            
-            try {
-                String subject = event.getOption("subject").getAsString();
-                Attachment file = event.getOption("attachment").getAsAttachment();
-                // store the  topics name in a list  after removal of whitespaces
-               String topics = event.getOption("topics").getAsString().trim();
-                // uploading the file
-                DriveResourceManager.uploadFile(file.getUrl(), file.getFileName(), file.getContentType(),topics, subject, event.getMember().getEffectiveName());
+            // get download links of notes
+            if(event.getName().equals("pull_notes")){
 
-                // responses by bot to user
-                hook.sendMessage("Uploaded Successfully!. \nThanks for sharing the resource with others.").queue();
-                event.getChannel().sendMessage("@everyone New material added in "+subject+" by "+event.getMember().getEffectiveName()+":star_struck:").queue();
+                event.deferReply().setEphemeral(true).queue();
+                InteractionHook hook = event.getHook();
+
+                try {
+                    String subject = event.getOption("subject").getAsString();
+                    String[] topics = event.getOption("topics").getAsString().toLowerCase().split(",");
                 
-            }catch (IOException e) {
-                e.printStackTrace();
-                hook.sendMessage(":warning:Couldn't Upload your File.\n"+
-                                 "Reason: "+ e.getMessage()).queue();
+                    List<File> downloadFiles = DriveResourceManager.searchAndGetFiles(subject, topics);
+                    String links = "";
+                    for(File file : downloadFiles){
+                        links += "\n * " + file.getWebViewLink();
+                    }
+                    hook.sendMessage(":inbox_tray: Download / View your files from following links:"+links).queue();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    hook.sendMessage(":warning: Couldn't Fetch Links.\nReason:"+e.getMessage()).queue();
+                }
+                
+                return;
             }
-            return;
-        }
-
-        // list the available notes subject to user whne used "update_notes" command
-        if(event.getName().equals("update_notes")){
 
 
-            // private replies by bot only
-            event.deferReply().setEphemeral(true).queue();
-            InteractionHook hook = event.getHook();
+            // upload notes to appropriate folder on google-drive
+            if(event.getName().equals("push_notes")){
 
-            try {
-                // retrive folder list from drive
-                subjFolders = DriveResourceManager.getMostRecentFolderList();/* TODO:monitor behaviour and use getLatestFoldersList() if required */
-                // prepare the names in one string
-                String subjectNames = "";
-                for (File file : subjFolders)
-                subjectNames += "\n * "+file.getName();
-                // send list names
-                hook.sendMessage("Updated Successfully!! \nFollowing subject notes are avialble:-"+subjectNames).queue();
-            } catch (IOException e) {
-                e.printStackTrace();
-                hook.sendMessage("Some error occured! Inform the admin.").setEphemeral(true).queue();
+                // bot reply privately, use hook fro reply to the messege
+                event.deferReply().setEphemeral(true).queue();
+                InteractionHook hook = event.getHook();
+                
+                try {
+                    String subject = event.getOption("subject").getAsString();
+                    Attachment file = event.getOption("attachment").getAsAttachment();
+                    // store the  topics name in a list  after removal of whitespaces
+                    String topics = event.getOption("topics").getAsString().toLowerCase().trim();
+                    // uploading the file
+                    DriveResourceManager.uploadFile(file.getUrl(), file.getFileName(), file.getContentType(),topics, subject, event.getMember().getEffectiveName());
+
+                    // responses by bot to user
+                    hook.sendMessage("Uploaded Successfully!. \nThanks for sharing the resource with others.").queue();
+                    event.getGuild()
+                        .getTextChannels().getFirst()
+                        .sendMessage("@everyone New material added in "+subject+" by "+event.getMember().getEffectiveName()+" :star_struck:")
+                        .queue();
+                    
+                }catch (IOException e) {
+                    e.printStackTrace();
+                    hook.sendMessage(":warning: Couldn't Upload your File.\n"+
+                                    "Reason: "+ e.getMessage()).queue();
+                }
+                return;
             }
-            return;
-        }
 
 
 
 
 
-        //DEMO: time coammnd interaction
-        if (event.getName().equals("show_time")) {
-            event.deferReply().setEphemeral(true).queue();
-            InteractionHook msgHook = event.getHook();
-            if(event.getOption("really").getAsBoolean() == true){
-                msgHook.sendMessage("I dont know what time it is! \nBut I am sure its late.").queue();
-            }else{
-                msgHook.sendMessage("Fine false means no!").queue();
+            // list the available notes subject to user whne used "update_notes" command
+            if(event.getName().equals("update_notes")){
+
+                // private replies by bot only
+                event.deferReply().setEphemeral(true).queue();
+                InteractionHook hook = event.getHook();
+
+                try {
+                    // retrive folder list from drive
+                    subjFolders = DriveResourceManager.getMostRecentFolderList();/* TODO:monitor behaviour and use getLatestFoldersList() if required */
+                    // prepare the names in one string
+                    String subjectNames = "";
+                    for (File file : subjFolders)
+                    subjectNames += "\n * "+file.getName();
+                    // send list names
+                    hook.sendMessage("Updated Successfully!! \nFollowing subject notes are avialble:-"+subjectNames).queue();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    hook.sendMessage("Some error occured! Inform the admin.").setEphemeral(true).queue();
+                }
+                return;
             }
-            return;
-        }
 
+
+
+
+
+            //DEMO: time coammnd interaction
+            if (event.getName().equals("show_time")) {
+                event.deferReply().setEphemeral(true).queue();
+                InteractionHook msgHook = event.getHook();
+                if(event.getOption("really").getAsBoolean() == true){
+                    msgHook.sendMessage("I dont know what time it is! \nBut I am sure its late.").queue();
+                }else{
+                    msgHook.sendMessage("Fine false means no!").queue();
+                }
+                return;
+            }
+
+
+
+
+        });
     }  
 
     @Override

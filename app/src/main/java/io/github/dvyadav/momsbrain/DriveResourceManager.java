@@ -9,7 +9,11 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -76,7 +80,7 @@ public class DriveResourceManager {
             // get list of all files and folders
             FileList result = driveService.files().list()
             .setPageToken(pageToken)
-            .setFields("nextPageToken, files(id, name, mimeType)")
+            .setFields("nextPageToken, files(id, name, mimeType, properties, webViewLink, parents)")
             .execute();
     
             entityList.addAll(result.getFiles());
@@ -90,67 +94,68 @@ public class DriveResourceManager {
     // returns the list of latest FOLDERS from storage
     public static List<File> getLatestFoldersList() throws IOException{
         
-        mostRecentfoldersList.clear();
+        List<File> latestFolders = new ArrayList<>();
         // filter only folders excluding root folder and updating old folder list
-            for (File enity : getDriveEntityList()) {
-                if(enity.getMimeType().equals("application/vnd.google-apps.folder") && !(enity.getName().equals(rootFolderName)))
-                    mostRecentfoldersList.add(enity);
-            }        
-        return mostRecentfoldersList;
+        for (File enity : getDriveEntityList()) {
+            if(enity.getMimeType().equals("application/vnd.google-apps.folder") && !(enity.getName().equals(rootFolderName)))
+                latestFolders.add(enity);
+        }        
+        return latestFolders;
     }    
 
     // returns the list of latest FILES from storage
     public static List<File> getLatestFilesList() throws IOException{
 
-        mostRecentfilesList.clear();
-            // filter only files and update old file list
-            for (File entity : getDriveEntityList()) {
-                if(! entity.getMimeType().equals("application/vnd.google-apps.folder"))
-                    mostRecentfilesList.add(entity);
-            }        
-        return mostRecentfilesList;
+        List<File> latestFiles = new ArrayList<>();
+        // filter only files and update old file list
+        for (File entity : getDriveEntityList()) {
+            if(! entity.getMimeType().equals("application/vnd.google-apps.folder"))
+                latestFiles.add(entity);
+        }        
+        return latestFiles;
     }    
 
     // return presaved folder list instead of using api calls
     public static List<File> getMostRecentFolderList() throws IOException{
         // if null then use api call
-        if(mostRecentfoldersList.isEmpty()){
-            return getLatestFoldersList();
-        }else{
-            return mostRecentfoldersList;
+        if(mostRecentfoldersList.isEmpty() || mostRecentfoldersList == null){
+            mostRecentfoldersList = getLatestFoldersList();
         }
-
+        return mostRecentfoldersList;
     }
 
     // return presaved files list instead of using api calls
     public static List<File> getMostRecentFileList() throws IOException{
         // if null then use api call
-        if(mostRecentfilesList.isEmpty()){
-            return getLatestFilesList();
-        }else{
-            return mostRecentfilesList;
+        if(mostRecentfilesList.isEmpty() || mostRecentfilesList ==  null){
+            mostRecentfilesList = getLatestFilesList();
         }
-
+        return mostRecentfilesList;
     }
 
 
     // upload files to drive in a specific folder
     public static void uploadFile(String fileUrl,String fileName, String fileType, String topics, String folderName, String uploaderName)throws IOException{
-        // create inforamtion of file
+
+        // Setting metadata of file
         File fileMetadata  = new File();
         fileMetadata.setName(ZonedDateTime.now(ZoneId.of("GMT"))+"_"+uploaderName+"_"+fileName);//TODO:what should be names of the notes uploaded maybe date+uploader name??
+
         // filtering desired folder and obatin id()
         List<String> parentsIdList = getMostRecentFolderList().stream()
                                                         .filter(fl->fl.getName().equals(folderName))
                                                         .map(File::getId)//fl->fl.getId()
                                                         .collect(Collectors.toList());
-        //ensure that subject is select from options list
         if(parentsIdList.isEmpty() || parentsIdList == null){
             throw new IOException("This Subject is not available yet.\nPlease select appropriate subject name from the option list.");
         }
-
         fileMetadata.setParents(parentsIdList);
-        fileMetadata.setDescription(topics);
+
+        // this map is used to make a indexable property of file
+        Map<String,String> topicMap = new HashMap<>();
+        topicMap.put("topic", topics);
+        fileMetadata.setProperties(topicMap);
+
         // download inputstream of actual file via http connection
         @SuppressWarnings("deprecation")
         HttpURLConnection con = (HttpURLConnection) (new URL(fileUrl).openConnection());
@@ -160,15 +165,51 @@ public class DriveResourceManager {
         if(con.getResponseCode() == HttpURLConnection.HTTP_OK){
             //uploading file
             File uploadedFile = driveService.files().create(fileMetadata, new InputStreamContent(fileType, con.getInputStream()))
-                                            .setFields("id, name, mimeType")
+                                            .setFields("id, name, mimeType, properties, webViewLink, parents")
                                             .execute();
             // upadating offline list of available notes
-            mostRecentfilesList.add(uploadedFile);
+            getMostRecentFileList().add(uploadedFile);
         }else{
             // error while laoding file from discord server
-            throw new IOException("Problem while fetching file via url");
+            throw new IOException("Problem with uploading file. Please retry.");
         }
 
+    }
+
+    public static List<File> searchAndGetFiles(String folderName, String[] topicsToSearch) throws IOException{
+
+        // collect the id of target subject folder
+        String folderId = null;
+        for (File folder : getMostRecentFolderList()) {
+            if(folder.getName().equals(folderName)){
+                folderId = folder.getId();
+                break;
+            }
+        }
+        if(folderId == null){
+            throw new IOException("This Subject is not available yet.\nPlease select appropriate subject name from the option list.");
+        }
+
+        //Map removes redundent files via unique file id as key and helps in searching
+        HashMap<String, File> searchResultFilesMap = new HashMap<>();
+        for (String topic : topicsToSearch) {
+            for (File file : getMostRecentFileList()) {
+                if(file.getParents().getFirst().equals(folderId) &&
+                    file.getProperties().get("topic").contains(topic.trim())){
+                        searchResultFilesMap.put(file.getId(), file);
+                    }
+            }
+        }
+        if(searchResultFilesMap.isEmpty()){
+            throw new IOException("Notes on given topics not found. Please try with different keyword.");
+        }
+
+        //prepare a list of downloadable links
+        List<File> downloadLinksList = new ArrayList<>();
+        for (String key : searchResultFilesMap.keySet()) {
+            downloadLinksList.add(searchResultFilesMap.get(key));
+        }
+        return downloadLinksList;
     }
 
     //WARNING: destructive operation! use carefully.
@@ -184,14 +225,14 @@ public class DriveResourceManager {
             });
             System.out.println("Deletion Success");
         } catch (Exception e) {
-            System.out.println("Exectio: Problem in fetching File List \n"+e.getMessage());
+            System.out.println("Exception: Problem in fetching File List \n"+e.getMessage());
         }
     }
 
 
     // TODO:create a function for downloading file
 
-    public static void main(String[] args) {
+    public static void main(String[] args){
         DriveResourceManager.initDriveService();
         System.out.println("SUCCESS");
     }
