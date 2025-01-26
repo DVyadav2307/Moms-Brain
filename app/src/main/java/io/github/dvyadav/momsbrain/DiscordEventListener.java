@@ -36,20 +36,27 @@ public class DiscordEventListener extends ListenerAdapter {
         // thread to initliaze google drive service
         Thread.ofVirtual().start(() -> DriveResourceManager.initDriveService());
 
-        // deleting global commands when bot reboots
-        event.getJDA().retrieveCommands().queue(c->c.forEach(Command::delete));
-
-        // deleting  every guilds commnds when bot reboots
-        event.getJDA().getGuilds().forEach(guild->{
-            guild.retrieveCommands().queue(cmdList->{
-                cmdList.forEach(Command::delete);
-            });
-        });
+        // TODO: decide better command deletion technique refer last todo at MomBotSlashCommandManager class
+        
+        // // deleting global commands when bot reboots
+        // event.getJDA().retrieveCommands().queue(cmdlist -> {
+        //     cmdlist.forEach(cmd -> {
+        //         cmd.delete().queue();
+        //     });
+        // });
+        // // deleting  every guilds commnds when bot reboots
+        // event.getJDA().getGuilds().forEach(guild -> {
+        //     guild.retrieveCommands().queue(cmdList -> {
+        //         cmdList.forEach(cmd -> {
+        //             cmd.delete().queue();
+        //         });
+        //     });
+        // });
 
         // TODO:Decide Global and Guild Commands and implement accordingly
 
         // Server specific command for "MOM'S BASEMENT"
-        event.getJDA().getGuildsByName("Mom's Basement", false).get(0)
+        event.getJDA().getGuildsByName("Mom's Basement", false).getFirst()
         .updateCommands().addCommands(MomBasementSlashCommandManager.getCommandsAsList()).queue();
 
         // Ready reminder
@@ -91,22 +98,60 @@ public class DiscordEventListener extends ListenerAdapter {
         Thread.ofVirtual().start(()->{
 
 
+            // create new subject folder
+            if(event.getName().equals("add_subject")){
+
+                // private replies
+                event.deferReply().setEphemeral(true).queue();
+                InteractionHook hook  = event.getHook();
+
+                String subjectName = event.getOption("name").getAsString();
+                try {
+                    // folder creation
+                    DriveResourceManager.createFolder(subjectName);
+
+                    // private response
+                    hook.sendMessage("Subject created successFully :thumbsup:").queue();
+
+                    // public response
+                    event.getGuild()
+                        .getTextChannels()
+                        .getFirst()
+                        .sendMessage(":file_folder: "+subjectName+" unlocked as new subject.\n"
+                                     +"now @everyone can access/publish the content")
+                        .queue();
+
+                } catch (IOException e) {
+                    hook.sendMessage(":warning: Failed to create subject.\nReason: "+e.getMessage()).queue();
+                    e.printStackTrace();
+
+                }
+
+                return;
+            }
+
+
             // get download links of notes
             if(event.getName().equals("pull_notes")){
 
                 event.deferReply().setEphemeral(true).queue();
                 InteractionHook hook = event.getHook();
 
+                String subject = event.getOption("subject").getAsString();
+                String[] topics = event.getOption("topics").getAsString().toLowerCase().split(",");
                 try {
-                    String subject = event.getOption("subject").getAsString();
-                    String[] topics = event.getOption("topics").getAsString().toLowerCase().split(",");
-                
+                    // searching and prepareing file list
                     List<File> downloadFiles = DriveResourceManager.searchAndGetFiles(subject, topics);
+
+                    // preparing link response in string
                     String links = "";
                     for(File file : downloadFiles){
-                        links += "\n * " + file.getWebViewLink();
+                        links += "\n * " + file.getWebViewLink() +" Id: "+file.getId();//id obtained from here will aid in deletion and identification
                     }
+
+                    // private response to user
                     hook.sendMessage(":inbox_tray: Download / View your files from following links:"+links).queue();
+
                 } catch (Exception e) {
                     e.printStackTrace();
                     hook.sendMessage(":warning: Couldn't Fetch Links.\nReason:"+e.getMessage()).queue();
@@ -123,11 +168,11 @@ public class DiscordEventListener extends ListenerAdapter {
                 event.deferReply().setEphemeral(true).queue();
                 InteractionHook hook = event.getHook();
                 
+                String subject = event.getOption("subject").getAsString();
+                Attachment file = event.getOption("attachment").getAsAttachment();
+                // store the  topics name in a list  after removal of whitespaces
+                String topics = event.getOption("topics").getAsString().toLowerCase().trim();
                 try {
-                    String subject = event.getOption("subject").getAsString();
-                    Attachment file = event.getOption("attachment").getAsAttachment();
-                    // store the  topics name in a list  after removal of whitespaces
-                    String topics = event.getOption("topics").getAsString().toLowerCase().trim();
                     // uploading the file
                     DriveResourceManager.uploadFile(file.getUrl(), file.getFileName(), file.getContentType(),topics, subject, event.getMember().getEffectiveName());
 
@@ -135,7 +180,7 @@ public class DiscordEventListener extends ListenerAdapter {
                     hook.sendMessage("Uploaded Successfully!. \nThanks for sharing the resource with others.").queue();
                     event.getGuild()
                         .getTextChannels().getFirst()
-                        .sendMessage("@everyone New material added in "+subject+" by "+event.getMember().getEffectiveName()+" :star_struck:")
+                        .sendMessage("New material added in "+subject+" by "+event.getMember().getEffectiveName()+" :star_struck:")
                         .queue();
                     
                 }catch (IOException e) {
@@ -147,9 +192,6 @@ public class DiscordEventListener extends ListenerAdapter {
             }
 
 
-
-
-
             // list the available notes subject to user whne used "update_notes" command
             if(event.getName().equals("show_available_subjects")){
 
@@ -159,22 +201,19 @@ public class DiscordEventListener extends ListenerAdapter {
 
                 try {
                     // retrive folder list from drive
-                    subjFolders = DriveResourceManager.getMostRecentFolderList();/* TODO:monitor behaviour and use getLatestFoldersList() if required */
+                    subjFolders = DriveResourceManager.getMostRecentFolderList();
                     // prepare the names in one string
                     String subjectNames = "";
                     for (File file : subjFolders)
                     subjectNames += "\n * "+file.getName();
                     // send list names
-                    hook.sendMessage("Updated Successfully!! \nFollowing subject notes are avialble:-"+subjectNames).queue();
+                    hook.sendMessage("Updated Successfully!! \nFollowing subject notes are available:-"+subjectNames).queue();
                 } catch (IOException e) {
                     e.printStackTrace();
                     hook.sendMessage("Some error occured! Inform the admin.").setEphemeral(true).queue();
                 }
                 return;
             }
-
-
-
 
 
             //DEMO: time coammnd interaction

@@ -10,10 +10,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -155,6 +153,7 @@ public class DriveResourceManager {
         Map<String,String> topicMap = new HashMap<>();
         topicMap.put("topic", topics);
         fileMetadata.setProperties(topicMap);
+        fileMetadata.setDescription(topics); //this will help in debugging
 
         // download inputstream of actual file via http connection
         @SuppressWarnings("deprecation")
@@ -212,7 +211,26 @@ public class DriveResourceManager {
         return downloadLinksList;
     }
 
-    //WARNING: destructive operation! use carefully.
+    //  create folder in rootFolder
+    public static void createFolder(String folderName) throws IOException{
+        // setting meta info
+        File folderMetaData = new File();
+        folderMetaData.setName(folderName)
+                    .setMimeType("application/vnd.google-apps.folder")
+                    .setParents(getDriveEntityList()
+                                .stream()
+                                .filter( f -> f.getName().equals(rootFolderName) )
+                                .map(f -> f.getId())
+                                .collect(Collectors.toList()) );
+        // creating folder
+        File newFolder = driveService.files().create(folderMetaData)
+                            .setFields("id, name, mimeType, properties, webViewLink, parents")
+                            .execute();
+        // add to folder list
+        mostRecentfoldersList.add(newFolder);
+    }
+
+    //WARNING: destructive operation! use carefully. //TODO: build command to delet files and folders
     private static void deleteAllFiles(){
         try {
         getMostRecentFileList().forEach(file->{
@@ -223,14 +241,29 @@ public class DriveResourceManager {
                                         "Reason: "+ e.getMessage());
                 }
             });
-            System.out.println("Deletion Success");
+            System.out.println("File Deletion Success");
         } catch (Exception e) {
             System.out.println("Exception: Problem in fetching File List \n"+e.getMessage());
         }
     }
 
+    //WARNING: destructive operation! use carefully.
+    private static void deleteAllFolders(){
+        try {
+        getMostRecentFolderList().forEach(folder->{
+                try {
+                    driveService.files().delete(folder.getId()).execute();
+                } catch (IOException e) {
+                    System.out.println("Couldnt delete file: "+ folder.getName()+
+                                        "Reason: "+ e.getMessage());
+                }
+            });
+            System.out.println("Folder Deletion Success");
+        } catch (Exception e) {
+            System.out.println("Exception: Problem in fetching Folder List \n"+e.getMessage());
+        }
+    }
 
-    // TODO:create a function for downloading file
 
     public static void main(String[] args){
         DriveResourceManager.initDriveService();

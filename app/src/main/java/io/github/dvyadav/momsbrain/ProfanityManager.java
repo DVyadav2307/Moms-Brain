@@ -35,7 +35,6 @@ public class ProfanityManager {
         }
     }
 
-    @SuppressWarnings("null")
     public void handleProfanity(Message chatMsg){
 
         if(isChatProfane(chatMsg.getContentStripped())){
